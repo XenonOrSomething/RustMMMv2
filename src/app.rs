@@ -16,6 +16,12 @@ pub struct TemplateApp {
     multibuttonChar: String,
     isDev: bool,
     isErrorShown: bool,
+    isMSGBoxShown: bool,
+    MSGBox_Text: String,
+    isMMIv1: bool,
+    isMMIv2: bool,
+    isxenonMMI: bool,
+    isCommunityMMI: bool,
     
 }
 
@@ -30,6 +36,14 @@ impl Default for TemplateApp {
             multibuttonChar: "...".to_string(),
             isDev: false,
             isErrorShown: false,
+            isMSGBoxShown: false,
+            MSGBox_Text: "undefined".to_string(),
+            isMMIv1: false,
+            isMMIv2: false,
+            isxenonMMI: false,
+            isCommunityMMI: false,
+            
+
         }
     }
 }
@@ -80,18 +94,24 @@ impl eframe::App for TemplateApp {
                         
                             
                         if ui.button("Launch Gorilla Tag").clicked() {
-                            let output = if cfg!(target_os = "windows") {
-                                Command::new("cmd")
-                                    .args(["/C", &mut self.label])
-                                    .output()
-                                    .expect("failed to execute process")
-                            } else {
-                                Command::new("sh")
-                                    .arg("-c")
-                                    .arg(&mut self.label)
-                                    .output()
-                                    .expect("failed to execute process")
-                            };
+                            if(self.label == ""){
+                                self.isMSGBoxShown = true;
+                                self.MSGBox_Text = "ERROR: You have not selected a game path".to_string();
+                            }else{
+                                let output = if cfg!(target_os = "windows") {
+                                    Command::new("cmd")
+                                        .args(["/C", &mut self.label])
+                                        .output()
+                                        .expect("failed to execute process")
+                                } else {
+                                    Command::new("sh")
+                                        .arg("-c")
+                                        .arg(&mut self.label)
+                                        .output()
+                                        .expect("failed to execute process")
+                                };
+                            }
+                            
                         }
                         
                         if ui.button("Enable broken mods").clicked() {
@@ -104,10 +124,14 @@ impl eframe::App for TemplateApp {
                         
                     });
                     ui.menu_button("Mod repos", |ui| {
-                        ui.checkbox(&mut false, "MonkeModInfo (legacy)");
-                        ui.checkbox(&mut false, "MonkeModInfo (2.0)");
-                        ui.checkbox(&mut true, "RustMMM Database");
-                        ui.checkbox(&mut true, "Community Submitted");
+                        ui.checkbox(&mut self.isMMIv1, "MonkeModInfo (legacy)");
+                        ui.checkbox(&mut self.isMMIv2, "MonkeModInfo (2.0)");
+                        ui.checkbox(&mut self.isxenonMMI, "RustMMM Database");
+                        ui.checkbox(&mut self.isCommunityMMI, "Community Submitted");
+                        if(ui.button("Custom Repos").clicked()){
+                            self.isMSGBoxShown = true;
+                            self.MSGBox_Text = "Not Implemented".to_string();
+                        }
                     });
                     
                     ui.menu_button("Help", |ui| {
@@ -189,7 +213,19 @@ impl eframe::App for TemplateApp {
                         }
                     });
                 }
-                
+                if(self.isMSGBoxShown){
+                    egui::Window::new("Information").show(ctx, |ui| {
+                        
+                        egui::ScrollArea::vertical().show(ui, |ui| {
+                            ui.label(&self.MSGBox_Text);
+                            
+                        });
+                        ui.separator();
+                        if(ui.button("Ok").clicked()){
+                            self.isMSGBoxShown = false;
+                        }
+                    });
+                }
                 
                 
             });
@@ -233,3 +269,5 @@ fn saveDir(path: &[u8]) -> std::io::Result<()> {
     file.write_all(path)?;
     Ok(())
 }
+
+
