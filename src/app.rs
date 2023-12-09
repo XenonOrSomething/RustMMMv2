@@ -1,3 +1,7 @@
+use std::{path::PathBuf, fs::File, io::Write, string, process::Command};
+
+use egui::Context;
+use rfd::FileDialog;
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
 #[derive(serde::Deserialize, serde::Serialize)]
 #[serde(default)] // if we add new fields, give them default values when deserializing old state
@@ -7,14 +11,25 @@ pub struct TemplateApp {
 
     #[serde(skip)] // This how you opt-out of serialization of a field
     value: f32,
+    hasFirstRan: bool,
+    gamePathSave: String,
+    multibuttonChar: String,
+    isDev: bool,
+    isErrorShown: bool,
+    
 }
 
 impl Default for TemplateApp {
     fn default() -> Self {
         Self {
             // Example stuff:
-            label: "Hello World!".to_owned(),
+            label: "".to_owned(),
             value: 2.7,
+            hasFirstRan: false,
+            gamePathSave: "".to_string(),
+            multibuttonChar: "...".to_string(),
+            isDev: false,
+            isErrorShown: false,
         }
     }
 }
@@ -37,9 +52,11 @@ impl TemplateApp {
 
 impl eframe::App for TemplateApp {
     /// Called by the frame work to save state before shutdown.
+    /*dont want to save app state
     fn save(&mut self, storage: &mut dyn eframe::Storage) {
         eframe::set_value(storage, eframe::APP_KEY, self);
-    }
+    } 
+    */
 
     /// Called each time the UI needs repainting, which may be many times per second.
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
@@ -48,7 +65,7 @@ impl eframe::App for TemplateApp {
 
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
             // The top panel is often a good place for a menu bar:
-
+            
             egui::menu::bar(ui, |ui| {
                 // NOTE: no File->Quit on web pages!
                 let is_web = cfg!(target_arch = "wasm32");
@@ -57,38 +74,139 @@ impl eframe::App for TemplateApp {
                         if ui.button("Quit").clicked() {
                             ctx.send_viewport_cmd(egui::ViewportCommand::Close);
                         }
+                        egui::widgets::global_dark_light_mode_buttons(ui);
+                    });
+                    ui.menu_button("Experimental", |ui| {
+                        
+                            
+                        if ui.button("Launch Gorilla Tag").clicked() {
+                            let output = if cfg!(target_os = "windows") {
+                                Command::new("cmd")
+                                    .args(["/C", &mut self.label])
+                                    .output()
+                                    .expect("failed to execute process")
+                            } else {
+                                Command::new("sh")
+                                    .arg("-c")
+                                    .arg(&mut self.label)
+                                    .output()
+                                    .expect("failed to execute process")
+                            };
+                        }
+                        
+                        if ui.button("Enable broken mods").clicked() {
+                            
+                        }
+                        if ui.button("Hide manager Gameobject").clicked() {
+                            
+                        }
+                        
+                        
+                    });
+                    ui.menu_button("Mod repos", |ui| {
+                        ui.checkbox(&mut false, "MonkeModInfo (legacy)");
+                        ui.checkbox(&mut false, "MonkeModInfo (2.0)");
+                        ui.checkbox(&mut true, "RustMMM Database");
+                        ui.checkbox(&mut true, "Community Submitted");
+                    });
+                    
+                    ui.menu_button("Help", |ui| {
+                        if ui.button("help").clicked() {
+                            self.isErrorShown = !self.isErrorShown;
+                        }
                     });
                     ui.add_space(16.0);
+                    
                 }
 
-                egui::widgets::global_dark_light_mode_buttons(ui);
+                
             });
         });
 
         egui::CentralPanel::default().show(ctx, |ui| {
             // The central panel the region left after adding TopPanel's and SidePanel's
-            ui.heading("eframe template");
-
             ui.horizontal(|ui| {
-                ui.label("Write something: ");
+                ui.heading("RustMMM");
+                
+                ui.label("v0.0.1");
+                ui.label("Game path: ");
                 ui.text_edit_singleline(&mut self.label);
+                if(self.label != ""){
+                    if(ui.button("✓").clicked()){
+                        println!("not implemented");
+                    }
+                }else{
+                    if(ui.button("...").clicked()){
+                        let files = FileDialog::new()
+                        .add_filter("Gorilla Tag", &["exe"])
+                        
+                        .set_directory("/")
+                        .pick_file();
+                        println!("{:?}", files);
+                        let tempPath: Option<PathBuf> = files;
+                        if let Some(path_buf) = tempPath {
+                            let path_string: String = path_buf.to_string_lossy().into_owned();
+                            let moved_string = path_string.clone();
+                            self.label = path_string;
+                            
+                            let bytes: &[u8] = moved_string.as_bytes();
+                            
+                        }
+                        
+                        
+                    }
+                }
+                if(self.isErrorShown){
+                    egui::Window::new("Help").show(ctx, |ui| {
+                        
+                        egui::ScrollArea::vertical().show(ui, |ui| {
+                            ui.heading("Selecting game folder");
+                            
+                            ui.label("To select a game folder, click the '...' button, as shown below");
+                            ui.add_space(16.0);
+                            ui.label("TODO: PLACE AN IMAGE HERE");
+                            ui.add_space(16.0);
+                            ui.heading("Adding custom repos:");
+                            
+                            ui.separator();
+                            ui.add_space(16.0);
+                            ui.label("If you want to add Custom repositories to widen your selection of mods, follow these steps:");
+                            ui.add_space(16.0);
+                            ui.label("- Open the 'Repos' context menu");
+                            ui.add_space(16.0);
+                            ui.label("- Select 'Add Custom Repos'");
+                            ui.add_space(16.0);
+                            ui.label("- TODO: PLACE AN IMAGE HERE");
+                            ui.add_space(16.0);
+                            ui.label("- In the textbox, Paste in your Repository URL, and click 'Add', Or drag in one of the trusted repos");
+                            ui.add_space(16.0);
+                            ui.label("- TODO: PLACE AN IMGE HERE")
+                            
+                        });
+                        ui.separator();
+                        if(ui.button("Ok").clicked()){
+                            self.isErrorShown = false;
+                        }
+                    });
+                }
+                
+                
+                
             });
+            
 
-            ui.add(egui::Slider::new(&mut self.value, 0.0..=10.0).text("value"));
-            if ui.button("Increment").clicked() {
-                self.value += 1.0;
-            }
+            
+
+            
 
             ui.separator();
 
-            ui.add(egui::github_link_file!(
-                "https://github.com/emilk/eframe_template/blob/master/",
-                "Source code."
-            ));
+            
 
             ui.with_layout(egui::Layout::bottom_up(egui::Align::LEFT), |ui| {
-                powered_by_egui_and_eframe(ui);
+                
                 egui::warn_if_debug_build(ui);
+                ui.label("Selected Mods: 0");
             });
         });
     }
@@ -106,4 +224,12 @@ fn powered_by_egui_and_eframe(ui: &mut egui::Ui) {
         );
         ui.label(".");
     });
+}
+
+fn saveDir(path: &[u8]) -> std::io::Result<()> {
+    
+
+    let mut file = File::create("GameDirPath.ini")?;
+    file.write_all(path)?;
+    Ok(())
 }
