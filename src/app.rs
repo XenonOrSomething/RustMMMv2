@@ -202,7 +202,7 @@ impl eframe::App for TemplateApp {
                             ui.add_space(16.0);
                             ui.label("- TODO: PLACE AN IMAGE HERE");
                             ui.add_space(16.0);
-                            ui.label("- In the textbox, Paste in your Repository URL, and click 'Add', Or drag in one of the trusted repos");
+                            ui.label("- In the textbox, Paste in your Repository URL, and click 'Add', add one of the trusted repos");
                             ui.add_space(16.0);
                             ui.label("- TODO: PLACE AN IMGE HERE")
                             
